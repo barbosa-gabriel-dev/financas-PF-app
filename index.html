@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Controle Financeiro & Quitação PF</title>
+  <!-- PWA Meta Tags (PF) -->
+  <meta name="theme-color" content="#1e1b4b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Finanças PF">
+  <link rel="manifest" href="./manifest.json">
   <!-- Tailwind CSS & Chart.js via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -32,6 +38,9 @@
       <div class="flex items-center gap-2">
         <input type="month" id="filtroMes" class="bg-indigo-900 text-white text-sm rounded-lg px-3 py-2 border border-indigo-700 focus:outline-none focus:border-indigo-400">
         
+        <button id="btnInstalarPWA" onclick="instalarPWA()" title="Instalar Aplicativo no Dispositivo" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm transition">
+          <i class="fa-solid fa-download"></i> <span class="hidden sm:inline">Instalar App</span>
+        </button>
         <button onclick="carregarDados()" title="Sincronizar com a Planilha" class="bg-indigo-900 hover:bg-indigo-800 p-2.5 rounded-lg border border-indigo-700 transition">
           <i class="fa-solid fa-rotate"></i>
         </button>
@@ -129,7 +138,7 @@
         </div>
       </div>
 
-      <!-- BLOCO 3: RESUMO DOS 4 CARTÕES DE CRÉDITO NO MÊS -->
+      <!-- BLOCO 3: RESUMO DOS CARTÕES DE CRÉDITO NO MÊS -->
       <div>
         <div class="flex justify-between items-center mb-3">
           <h3 class="font-bold text-slate-700 text-sm uppercase tracking-wide"><i class="fa-solid fa-credit-card text-indigo-600 mr-1"></i> Estimativa de Fatura dos Cartões neste Mês</h3>
@@ -210,7 +219,7 @@
       <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-3">
         <div class="flex flex-wrap items-center gap-2">
           <select id="filtroCartaoId" onchange="renderizarTabelaComprasCartao()" class="border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white">
-            <option value="TODOS">Todos os 4 Cartões</option>
+            <option value="TODOS">Todos os Cartões</option>
           </select>
           <span class="text-xs text-slate-500">Exibindo itens da fatura do mês selecionado no topo.</span>
         </div>
@@ -231,7 +240,7 @@
               <th class="py-3 px-4">Tipo</th>
               <th class="py-3 px-4">Valor na Fatura</th>
               <th class="py-3 px-4">Status Fatura</th>
-              <th class="py-3 px-4 text-right">Excluir</th>
+              <th class="py-3 px-4 text-right">Ações</th>
             </tr>
           </thead>
           <tbody id="tabelaComprasCartaoBody" class="divide-y divide-slate-200"></tbody>
@@ -314,7 +323,7 @@
         <div class="flex flex-wrap justify-between items-center gap-2">
           <div>
             <h3 class="font-bold text-slate-800 text-sm">Parcelas de Acordos & Histórico de Amortizações</h3>
-            <p class="text-xs text-slate-500">Acompanhe as parcelas de acordos que vencem no mês ou veja todo o histórico de abatimentos.</p>
+            <p class="text-xs text-slate-500">Acompanhe as parcelas de acordos que vencem no mês, edite valores ou estorne pagamentos.</p>
           </div>
           <select id="filtroParcelasDivida" onchange="renderizarTabelaPagamentosDividas()" class="border rounded-lg px-3 py-1.5 text-xs bg-slate-50">
             <option value="MES_ATUAL">Vencendo no Mês Selecionado</option>
@@ -327,13 +336,13 @@
           <table class="w-full text-left border-collapse text-xs">
             <thead>
               <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase">
-                <th class="py-2.5 px-3">Vencimento</th>
+                <th class="py-2.5 px-3">Data</th>
                 <th class="py-2.5 px-3">Credor / Dívida</th>
                 <th class="py-2.5 px-3">Parcela / Obs</th>
                 <th class="py-2.5 px-3">Valor Previsto</th>
                 <th class="py-2.5 px-3">Valor Pago</th>
                 <th class="py-2.5 px-3">Status</th>
-                <th class="py-2.5 px-3 text-right">Ação</th>
+                <th class="py-2.5 px-3 text-right">Ações</th>
               </tr>
             </thead>
             <tbody id="tabelaPagamentosDividasBody" class="divide-y divide-slate-200"></tbody>
@@ -348,7 +357,7 @@
   <div id="modalConfigCartao" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
       <div class="flex justify-between items-center border-b pb-3">
-        <h3 class="font-bold text-lg">Configurar Cartão de Crédito</h3>
+        <h3 id="tituloModalCartao" class="font-bold text-lg">Configurar Cartão de Crédito</h3>
         <button onclick="fecharModal('modalConfigCartao')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
       </div>
       <form id="formConfigCartao" onsubmit="salvarConfigCartao(event)" class="space-y-3 text-sm">
@@ -397,14 +406,17 @@
     </div>
   </div>
 
-  <!-- ================= MODAL 2: LANÇAR COMPRA NO CARTÃO ================= -->
+  <!-- ================= MODAL 2: LANÇAR / EDITAR COMPRA NO CARTÃO ================= -->
   <div id="modalCompraCartao" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
       <div class="flex justify-between items-center border-b pb-3">
-        <h3 class="font-bold text-lg">Lançar Compra no Cartão</h3>
+        <h3 id="tituloModalCompraCartao" class="font-bold text-lg">Lançar Compra no Cartão</h3>
         <button onclick="fecharModal('modalCompraCartao')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
       </div>
       <form id="formCompraCartao" onsubmit="salvarCompraCartao(event)" class="space-y-3 text-sm">
+        <input type="hidden" id="cmpIdCompra" value="">
+        <input type="hidden" id="cmpIdGrupo" value="">
+
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Selecionar Cartão</label>
@@ -421,7 +433,7 @@
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Valor Total da Compra (R$)</label>
+            <label id="lblValorCompraCartao" class="block text-xs font-semibold text-slate-600 mb-1">Valor Total da Compra (R$)</label>
             <input type="number" step="0.01" id="cmpValorTotal" required placeholder="0.00" class="w-full border rounded-lg px-3 py-2">
           </div>
           <div>
@@ -442,6 +454,15 @@
             </select>
           </div>
         </div>
+
+        <div id="blocoModoEdicaoCompra" class="hidden bg-amber-50 p-2.5 rounded-lg border border-amber-200 text-xs space-y-1">
+          <label class="flex items-center gap-2 font-semibold text-amber-900 cursor-pointer">
+            <input type="checkbox" id="cmpRecalcularGrupo" checked onchange="alternarLabelEdicaoCompra()" class="rounded text-indigo-600">
+            <span>Recalcular todas as parcelas desta compra</span>
+          </label>
+          <p class="text-[11px] text-amber-700">Desmarque se quiser alterar apenas o valor ou descrição da parcela deste mês.</p>
+        </div>
+
         <p class="text-xs text-slate-500 bg-indigo-50 p-2.5 rounded-lg border border-indigo-100">
           <i class="fa-solid fa-wand-magic-sparkles text-indigo-600 mr-1"></i>
           O sistema verifica o <strong>Dia de Fechamento</strong> do cartão e distribui as parcelas automaticamente nas faturas certas.
@@ -489,7 +510,6 @@
           </div>
         </div>
 
-        <!-- Bloco Exclusivo para Instituições (Modalidade e Juros Automáticos) -->
         <div id="blocoJurosInstituicao" class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Modalidade Financeira</label>
@@ -519,7 +539,6 @@
           </div>
         </div>
 
-        <!-- Seção de Acordo / Parcelamento Fixo -->
         <div class="border-t pt-3 space-y-3">
           <div class="grid grid-cols-2 gap-3">
             <div>
@@ -572,12 +591,12 @@
     </div>
   </div>
 
-  <!-- ================= MODAL 4: AMORTIZAR DÍVIDA / PAGAR PARCELA ================= -->
+  <!-- ================= MODAL 4: AMORTIZAR / EDITAR PAGAMENTO DE DÍVIDA ================= -->
   <div id="modalAmortizar" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
       <div class="flex justify-between items-center border-b pb-3">
         <div>
-          <h3 class="font-bold text-lg">Registrar Pagamento / Amortização</h3>
+          <h3 id="tituloModalAmortizar" class="font-bold text-lg">Registrar Pagamento / Amortização</h3>
           <p id="amortSubtitulo" class="text-xs text-slate-500"></p>
         </div>
         <button onclick="fecharModal('modalAmortizar')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
@@ -586,21 +605,22 @@
         <input type="hidden" id="amortIdDivida">
         <input type="hidden" id="amortIdPagto">
         <input type="hidden" id="amortSaldoAtual">
+        <input type="hidden" id="amortModoEdicao" value="NAO">
 
         <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-lg border">
           <div>
-            <span class="block text-xs text-slate-500">Saldo Devedor Atual</span>
+            <span class="block text-xs text-slate-500">Saldo Base Antes</span>
             <strong id="amortUiSaldoAtual" class="text-base text-slate-800">R$ 0,00</strong>
           </div>
           <div class="border-l pl-3">
-            <span class="block text-xs text-slate-500">Saldo Após Pagamento</span>
+            <span class="block text-xs text-slate-500">Saldo Após Este Pagto</span>
             <strong id="amortUiNovoSaldo" class="text-base text-emerald-600">R$ 0,00</strong>
           </div>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Valor Pago Agora (R$)</label>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Valor Pago (R$)</label>
             <input type="number" step="0.01" id="amortValorPago" oninput="atualizarPreviewAmortizacao()" required class="w-full border rounded-lg px-3 py-2 font-bold text-emerald-700">
           </div>
           <div>
@@ -919,7 +939,6 @@
     function atualizarTudoUI() {
       const mesFiltro = document.getElementById('filtroMes').value;
 
-      // 1. Cálculos do Fluxo Mensal (Rendas vs Fixos/Avulsos)
       const fluxoDoMes = estado.fluxo_mes.filter(f => String(f.Mes_Ano || f.Data_Vencimento).startsWith(mesFiltro));
       let rendaTotal = 0, rendaRecebida = 0, fixosTotal = 0, fixosPagos = 0;
 
@@ -935,7 +954,6 @@
         }
       });
 
-      // 2. Cálculos das Faturas dos Cartões no Mês
       const comprasMes = estado.cartoes_lancamentos.filter(c => c.Mes_Fatura === mesFiltro);
       let faturaTotalMes = 0, faturaAbertaMes = 0;
       comprasMes.forEach(c => {
@@ -944,7 +962,6 @@
         if (c.Status_Fatura !== 'Paga') faturaAbertaMes += v;
       });
 
-      // 3. Cálculos de Parcelas de Acordos / Dívidas no Mês
       const pagtosDivMes = estado.dividas_pagamentos.filter(p => String(p.Data_Vencimento || p.Data_Pagamento).startsWith(mesFiltro));
       let acordosTotalMes = 0, acordosPagosMes = 0;
       pagtosDivMes.forEach(p => {
@@ -970,7 +987,6 @@
       document.getElementById('kpiAcordosPagos').innerText = `Pago no mês: ${formatarMoeda(acordosPagosMes)}`;
       document.getElementById('kpiFolegoMes').innerText = formatarMoeda(folegoLivre);
 
-      // 4. Termômetro Global de Quitação
       let passivoBaseTotal = 0, totalJaPago = 0, totalSaldoRestante = 0, totalDescontos = 0;
       estado.dividas.forEach(d => {
         const emAcordo = d.Em_Acordo === 'Sim';
@@ -996,8 +1012,7 @@
       renderizarTabelaPagamentosDividas();
     }
 
-    // RENDERIZAR OS 4 CARTÕES (NO DASH E NA ABA CARTÕES)
-    // RENDERIZAR OS CARTÕES (NO DASH APENAS ATIVOS; NA ABA CARTÕES TODOS + BOTÃO DE REATIVAR/CRIAR)
+    // RENDERIZAR OS CARTÕES (NO DASH APENAS ATIVOS; NA ABA CARTÕES TODOS + OPÇÃO DE REATIVAR)
     function renderizarCardsCartoes(mesFiltro) {
       const todosCartoes = estado.cartoes_config || [];
       const ativos = todosCartoes.filter(c => String(c.Ativo).toLowerCase() === 'sim');
@@ -1070,10 +1085,10 @@
         ? ativos.map(gerarHtmlCard).join('')
         : `<div class="col-span-4 bg-white p-4 rounded-xl border text-center text-xs text-slate-400">Nenhum cartão ativo. Vá na aba "2. Cartões de Crédito" para adicionar ou reativar.</div>`;
 
-      abaContainer.innerHTML = todosCartoes.map(gerarHtmlCard).join('');
+      abaContainer.innerHTML = todosCartoes.length
+        ? todosCartoes.map(gerarHtmlCard).join('')
+        : `<div class="col-span-4 bg-white p-6 rounded-xl border text-center text-xs text-slate-400">Nenhum cartão cadastrado. Clique em "Adicionar Novo Cartão" acima.</div>`;
     }
-
-    
 
     // TABELA FLUXO DO MÊS (NO DASH)
     function renderizarTabelaFluxoMes(lista) {
@@ -1179,8 +1194,11 @@
             <td class="py-3 px-4">${isAssinatura ? '<span class="px-2 py-0.5 rounded bg-purple-100 text-purple-700 text-xs font-semibold">Assinatura Fixa</span>' : 'Compra'}</td>
             <td class="py-3 px-4 font-bold text-rose-600">${formatarMoeda(c.Valor_Parcela)}</td>
             <td class="py-3 px-4">${c.Status_Fatura}</td>
-            <td class="py-3 px-4 text-right">
-              <button onclick="excluirCompraCartao('${c.ID_Compra}', '${c.ID_Grupo_Parcela}', ${c.Total_Parcelas}, this)" class="text-slate-400 hover:text-rose-600 px-2 py-1">
+            <td class="py-3 px-4 text-right whitespace-nowrap space-x-1">
+              <button onclick="abrirModalEdicaoCompraCartao('${c.ID_Compra}')" title="Editar Compra" class="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+              <button onclick="excluirCompraCartao('${c.ID_Compra}', '${c.ID_Grupo_Parcela}', ${c.Total_Parcelas}, this)" title="Excluir Compra" class="text-slate-400 hover:text-rose-600 px-2 py-1 rounded">
                 <i class="fa-solid fa-trash"></i>
               </button>
             </td>
@@ -1284,23 +1302,30 @@
         const nomeCredor = div ? `${div.Credor} (${div.Descricao})` : p.ID_Divida;
         const pago = p.Status === 'Pago';
 
+        const botoesAcao = !pago
+          ? `<button onclick="abrirModalAmortizar('${p.ID_Divida}', '${p.ID_Pagto}', ${p.Valor_Previsto})" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded text-xs font-medium"><i class="fa-solid fa-check mr-1"></i>Dar Baixa</button>`
+          : `<button onclick="abrirModalEditarPagtoDivida('${p.ID_Pagto}')" title="Editar Valor ou Data deste Pagamento" class="text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition"><i class="fa-solid fa-pen-to-square"></i></button>
+             <button onclick="estornarPagtoDivida('${p.ID_Pagto}', '${p.ID_Divida}', this)" title="Estornar Pagamento (Devolver ao Saldo Devedor)" class="text-rose-600 hover:bg-rose-50 px-2 py-1 rounded transition"><i class="fa-solid fa-rotate-left mr-1"></i>Estornar</button>`;
+
         return `
           <tr class="hover:bg-slate-50">
-            <td class="py-2.5 px-3">${p.Data_Vencimento || p.Data_Pagamento}</td>
+            <td class="py-2.5 px-3">${pago ? (p.Data_Pagamento || p.Data_Vencimento) : p.Data_Vencimento}</td>
             <td class="py-2.5 px-3 font-medium text-slate-800">${nomeCredor}</td>
             <td class="py-2.5 px-3">${p.Observacoes || 'Parcela ' + p.Numero_Parcela}</td>
             <td class="py-2.5 px-3">${formatarMoeda(p.Valor_Previsto)}</td>
             <td class="py-2.5 px-3 font-bold text-emerald-600">${formatarMoeda(p.Valor_Pago)}</td>
-            <td class="py-2.5 px-3">${p.Status}</td>
-            <td class="py-2.5 px-3 text-right">
-              ${!pago ? `<button onclick="abrirModalAmortizar('${p.ID_Divida}', '${p.ID_Pagto}', ${p.Valor_Previsto})" class="bg-emerald-600 text-white px-2.5 py-1 rounded text-xs">Dar Baixa</button>` : '-'}
+            <td class="py-2.5 px-3">
+              <span class="px-2 py-0.5 rounded-full text-[11px] font-semibold ${pago ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${p.Status}</span>
+            </td>
+            <td class="py-2.5 px-3 text-right whitespace-nowrap space-x-1">
+              ${botoesAcao}
             </td>
           </tr>
         `;
       }).join('');
     }
 
-    // FUNÇÕES DE MODAIS E GRAVAÇÃO
+    // FUNÇÕES DE MODAIS E GRAVAÇÃO (CARTÕES)
     function abrirModalNovoCartao() {
       const ativos = (estado.cartoes_config || []).filter(c => String(c.Ativo).toLowerCase() === 'sim');
       if (ativos.length >= 4) {
@@ -1310,6 +1335,7 @@
       document.getElementById('cardCfgId').value = '';
       document.getElementById('cardCfgCor').value = '#4f46e5';
       document.getElementById('cardCfgAtivo').value = 'Sim';
+      document.getElementById('tituloModalCartao').innerText = 'Adicionar Novo Cartão';
       document.getElementById('btnExcluirCartaoModal').classList.add('hidden');
       document.getElementById('modalConfigCartao').classList.remove('hidden');
     }
@@ -1324,6 +1350,7 @@
       document.getElementById('cardCfgFechamento').value = c.Dia_Fechamento;
       document.getElementById('cardCfgVencimento').value = c.Dia_Vencimento;
       document.getElementById('cardCfgAtivo').value = c.Ativo || 'Sim';
+      document.getElementById('tituloModalCartao').innerText = `Configurar: ${c.Nome_Cartao}`;
       document.getElementById('btnExcluirCartaoModal').classList.remove('hidden');
       document.getElementById('modalConfigCartao').classList.remove('hidden');
     }
@@ -1352,25 +1379,94 @@
     }
 
     function abrirModalCompraCartao() {
+      const ativos = (estado.cartoes_config || []).filter(c => String(c.Ativo).toLowerCase() === 'sim');
+      if (!ativos.length) {
+        return alert('Nenhum cartão ativo encontrado. Adicione ou reative um cartão na aba "2. Cartões de Crédito" primeiro.');
+      }
       document.getElementById('formCompraCartao').reset();
+      document.getElementById('cmpIdCompra').value = '';
+      document.getElementById('cmpIdGrupo').value = '';
       document.getElementById('cmpData').value = new Date().toISOString().slice(0, 10);
       document.getElementById('cmpParcelas').value = 1;
+      document.getElementById('cmpParcelas').disabled = false;
+      document.getElementById('lblValorCompraCartao').innerText = 'Valor Total da Compra (R$)';
+      document.getElementById('blocoModoEdicaoCompra').classList.add('hidden');
+      document.getElementById('tituloModalCompraCartao').innerText = 'Lançar Compra no Cartão';
+      document.getElementById('btnSubmitCompraCartao').innerText = 'Lançar na Fatura';
       document.getElementById('modalCompraCartao').classList.remove('hidden');
+    }
+
+    function abrirModalEdicaoCompraCartao(idCompra) {
+      const item = estado.cartoes_lancamentos.find(c => String(c.ID_Compra) === String(idCompra));
+      if (!item) return alert('Compra não encontrada.');
+
+      const descLimpa = String(item.Descricao || '').replace(/\s*\(\d+\/\d+\)$/, '');
+      const qtdParc = parseInt(item.Total_Parcelas, 10) || 1;
+      const valorParcela = Number(item.Valor_Parcela) || 0;
+      const valorTotalEstimado = Number((valorParcela * qtdParc).toFixed(2));
+
+      document.getElementById('cmpIdCompra').value = item.ID_Compra;
+      document.getElementById('cmpIdGrupo').value = item.ID_Grupo_Parcela;
+      document.getElementById('cmpIdCartao').value = item.ID_Cartao;
+      document.getElementById('cmpData').value = item.Data_Compra;
+      document.getElementById('cmpDescricao').value = descLimpa;
+      document.getElementById('cmpParcelas').value = qtdParc;
+      document.getElementById('cmpCategoria').value = item.Categoria || 'Geral';
+      document.getElementById('cmpAssinatura').value = item.Assinatura_Fixa || 'Não';
+
+      const inputValor = document.getElementById('cmpValorTotal');
+      inputValor.dataset.valorTotal = valorTotalEstimado;
+      inputValor.dataset.valorParcela = valorParcela;
+      inputValor.value = valorTotalEstimado;
+
+      document.getElementById('cmpRecalcularGrupo').checked = true;
+      document.getElementById('blocoModoEdicaoCompra').classList.remove('hidden');
+      alternarLabelEdicaoCompra();
+
+      document.getElementById('tituloModalCompraCartao').innerText = `Editar Compra: ${descLimpa}`;
+      document.getElementById('btnSubmitCompraCartao').innerText = 'Salvar Alterações';
+      document.getElementById('modalCompraCartao').classList.remove('hidden');
+    }
+
+    function alternarLabelEdicaoCompra() {
+      const recalcular = document.getElementById('cmpRecalcularGrupo').checked;
+      const lbl = document.getElementById('lblValorCompraCartao');
+      const inputValor = document.getElementById('cmpValorTotal');
+      const inputParc = document.getElementById('cmpParcelas');
+
+      if (recalcular) {
+        lbl.innerText = 'Valor Total da Compra (R$)';
+        inputValor.value = inputValor.dataset.valorTotal || inputValor.value;
+        inputParc.disabled = false;
+      } else {
+        lbl.innerText = 'Valor Apenas Desta Parcela (R$)';
+        inputValor.value = inputValor.dataset.valorParcela || inputValor.value;
+        inputParc.disabled = true;
+      }
     }
 
     async function salvarCompraCartao(e) {
       e.preventDefault();
       const btn = document.getElementById('btnSubmitCompraCartao');
+      const idCompraExistente = document.getElementById('cmpIdCompra').value.trim();
+
       const dados = {
+        ID_Compra: idCompraExistente || undefined,
+        ID_Grupo_Parcela: document.getElementById('cmpIdGrupo').value.trim() || undefined,
+        Recalcular_Grupo: idCompraExistente ? document.getElementById('cmpRecalcularGrupo').checked : true,
         ID_Cartao: document.getElementById('cmpIdCartao').value,
         Data_Compra: document.getElementById('cmpData').value,
-        Descricao: document.getElementById('cmpDescricao').value,
+        Descricao: document.getElementById('cmpDescricao').value.trim(),
         Valor_Total: parseFloat(document.getElementById('cmpValorTotal').value),
-        Total_Parcelas: parseInt(document.getElementById('cmpParcelas').value),
+        Total_Parcelas: parseInt(document.getElementById('cmpParcelas').value, 10) || 1,
         Categoria: document.getElementById('cmpCategoria').value,
         Assinatura_Fixa: document.getElementById('cmpAssinatura').value
       };
-      if (await enviarPost({ acao: 'adicionar_compra_cartao', dados }, btn)) fecharModal('modalCompraCartao');
+
+      const acao = idCompraExistente ? 'editar_compra_cartao' : 'adicionar_compra_cartao';
+      if (await enviarPost({ acao, dados }, btn)) {
+        fecharModal('modalCompraCartao');
+      }
     }
 
     async function pagarFatura(idCartao, mesFatura, btnEl) {
@@ -1388,7 +1484,7 @@
       await enviarPost({ acao: 'excluir_compra_cartao', id: idCompra, id_grupo: idGrupo, excluir_todas_parcelas: excluirTodas }, btnEl, '');
     }
 
-    // DÍVIDAS
+    // DÍVIDAS E AMORTIZAÇÕES
     function ajustarCamposTipoCredor() {
       const tipo = document.getElementById('divTipoCredor').value;
       const bloco = document.getElementById('blocoJurosInstituicao');
@@ -1478,13 +1574,44 @@
       if (!d) return;
       const saldo = Number(d.Saldo_Restante) || 0;
       document.getElementById('formAmortizar').reset();
+      document.getElementById('amortModoEdicao').value = 'NAO';
       document.getElementById('amortIdDivida').value = d.ID_Divida;
       document.getElementById('amortIdPagto').value = idPagto;
       document.getElementById('amortSaldoAtual').value = saldo;
+      document.getElementById('tituloModalAmortizar').innerText = 'Registrar Pagamento / Amortização';
+      document.getElementById('btnSubmitAmort').innerText = 'Confirmar Abatimento';
       document.getElementById('amortSubtitulo').innerText = `${d.Credor} - ${d.Descricao}`;
       document.getElementById('amortUiSaldoAtual').innerText = formatarMoeda(saldo);
       document.getElementById('amortValorPago').value = valorSugerido || '';
       document.getElementById('amortDataPagto').value = new Date().toISOString().slice(0, 10);
+      atualizarPreviewAmortizacao();
+      document.getElementById('modalAmortizar').classList.remove('hidden');
+    }
+
+    function abrirModalEditarPagtoDivida(idPagto) {
+      const p = estado.dividas_pagamentos.find(x => String(x.ID_Pagto) === String(idPagto));
+      if (!p) return alert('Registro de pagamento não encontrado.');
+      const d = estado.dividas.find(x => String(x.ID_Divida) === String(p.ID_Divida));
+      if (!d) return;
+
+      const saldoRestanteAtual = Number(d.Saldo_Restante) || 0;
+      const valorPagoOriginal = Number(p.Valor_Pago) || 0;
+      const saldoBaseAntesDestePagto = saldoRestanteAtual + valorPagoOriginal;
+
+      document.getElementById('formAmortizar').reset();
+      document.getElementById('amortModoEdicao').value = 'SIM';
+      document.getElementById('amortIdDivida').value = d.ID_Divida;
+      document.getElementById('amortIdPagto').value = p.ID_Pagto;
+      document.getElementById('amortSaldoAtual').value = saldoBaseAntesDestePagto;
+
+      document.getElementById('tituloModalAmortizar').innerText = 'Editar Pagamento Realizado';
+      document.getElementById('btnSubmitAmort').innerText = 'Salvar Correção';
+      document.getElementById('amortSubtitulo').innerText = `${d.Credor} - ${d.Descricao}`;
+      document.getElementById('amortUiSaldoAtual').innerText = formatarMoeda(saldoBaseAntesDestePagto);
+      document.getElementById('amortValorPago').value = valorPagoOriginal;
+      document.getElementById('amortDataPagto').value = p.Data_Pagamento || p.Data_Vencimento || new Date().toISOString().slice(0, 10);
+      document.getElementById('amortObs').value = p.Observacoes || '';
+
       atualizarPreviewAmortizacao();
       document.getElementById('modalAmortizar').classList.remove('hidden');
     }
@@ -1499,15 +1626,29 @@
     async function salvarAmortizacao(e) {
       e.preventDefault();
       const btn = document.getElementById('btnSubmitAmort');
+      const modoEdicao = document.getElementById('amortModoEdicao').value === 'SIM';
+      const acao = modoEdicao ? 'editar_pagamento_divida' : 'amortizar_divida';
+
       const ok = await enviarPost({
-        acao: 'amortizar_divida',
+        acao: acao,
         id_divida: document.getElementById('amortIdDivida').value,
         id_pagto: document.getElementById('amortIdPagto').value || undefined,
         valor_pago: parseFloat(document.getElementById('amortValorPago').value),
         data_pagamento: document.getElementById('amortDataPagto').value,
+        status: 'Pago',
         observacoes: document.getElementById('amortObs').value
-      }, btn, 'Confirmando...');
+      }, btn, 'Salvando...');
+
       if (ok) fecharModal('modalAmortizar');
+    }
+
+    async function estornarPagtoDivida(idPagto, idDivida, btnEl) {
+      if (!confirm('Deseja ESTORNAR este pagamento? O valor pago voltará para o saldo devedor da dívida.')) return;
+      await enviarPost({
+        acao: 'estornar_pagamento_divida',
+        id_pagto: idPagto,
+        id_divida: idDivida
+      }, btnEl, 'Estornando...');
     }
 
     async function excluirDivida(id, btnEl) {
@@ -1604,6 +1745,37 @@
       if (!confirm('Excluir este lançamento do mês?')) return;
       await enviarPost({ acao: 'excluir_fluxo_mes', id }, btnEl, '');
     }
+
+    // ================= REGISTRO PWA & BOTÃO DE INSTALAÇÃO =================
+    let eventoInstalacaoPWA = null;
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW falhou:', err));
+      });
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      eventoInstalacaoPWA = e;
+      const btn = document.getElementById('btnInstalarPWA');
+      if (btn) btn.classList.remove('hidden');
+    });
+
+    async function instalarPWA() {
+      if (!eventoInstalacaoPWA) return;
+      eventoInstalacaoPWA.prompt();
+      const { outcome } = await eventoInstalacaoPWA.userChoice;
+      if (outcome === 'accepted') {
+        document.getElementById('btnInstalarPWA').classList.add('hidden');
+      }
+      eventoInstalacaoPWA = null;
+    }
+
+    window.addEventListener('appinstalled', () => {
+      const btn = document.getElementById('btnInstalarPWA');
+      if (btn) btn.classList.add('hidden');
+    });
   </script>
 </body>
 </html>
