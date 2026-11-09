@@ -193,6 +193,7 @@
             <select id="selectEstrategia" onchange="renderizarOrdemAtaque()" class="text-xs border rounded-lg px-2 py-1 bg-slate-50 font-semibold text-indigo-700">
               <option value="AVALANCHE">Método Avalanche (Juros)</option>
               <option value="BOLA_DE_NEVE">Bola de Neve (Menor Saldo)</option>
+              <option value="PRIORIDADE">Por Prioridade (Altíssima ➔ Baixíssima)</option>
             </select>
           </div>
           <div id="listaOrdemAtaque" class="space-y-2.5 max-h-80 overflow-y-auto pr-1"></div>
@@ -551,9 +552,11 @@
             <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1">Prioridade Manual</label>
               <select id="divPrioridade" class="w-full border rounded-lg px-3 py-2">
+                <option value="Altíssima">🔥 Altíssima (Urgente)</option>
                 <option value="Alta">Alta</option>
                 <option value="Média" selected>Média</option>
                 <option value="Baixa">Baixa</option>
+                <option value="Baixíssima">Baixíssima</option>
               </select>
             </div>
           </div>
@@ -1118,7 +1121,29 @@
       }).join('');
     }
 
-    // ORDEM DE ATAQUE (AVALANCHE VS BOLA DE NEVE)
+    // Helper de Cores e Pesos para os 5 Níveis de Prioridade
+    const PESO_PRIORIDADE = {
+      'Altíssima': 5,
+      'Alta': 4,
+      'Média': 3,
+      'Baixa': 2,
+      'Baixíssima': 1
+    };
+
+    function gerarBadgePrioridade(prioridade) {
+      const p = prioridade || 'Média';
+      const estilos = {
+        'Altíssima': 'bg-red-600 text-white',
+        'Alta': 'bg-orange-100 text-orange-800 border border-orange-300',
+        'Média': 'bg-amber-100 text-amber-800',
+        'Baixa': 'bg-sky-100 text-sky-800',
+        'Baixíssima': 'bg-slate-100 text-slate-500'
+      };
+      const classe = estilos[p] || estilos['Média'];
+      return `<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${classe}">${p}</span>`;
+    }
+
+    // ORDEM DE ATAQUE (AVALANCHE, BOLA DE NEVE OU PRIORIDADE + DESEMPATE POR PRIORIDADE)
     function renderizarOrdemAtaque() {
       const estrategia = document.getElementById('selectEstrategia').value;
       const ativas = estado.dividas.filter(d => d.Status !== 'Quitada' && Number(d.Saldo_Restante) > 0);
@@ -1130,19 +1155,30 @@
       }
 
       ativas.sort((a, b) => {
-        if (estrategia === 'AVALANCHE') {
+        const pesoA = PESO_PRIORIDADE[a.Prioridade] || 3;
+        const pesoB = PESO_PRIORIDADE[b.Prioridade] || 3;
+
+        if (estrategia === 'PRIORIDADE') {
+          if (pesoB !== pesoA) return pesoB - pesoA;
           return (Number(b.Taxa_Juros_Mes) || 0) - (Number(a.Taxa_Juros_Mes) || 0);
+        } else if (estrategia === 'AVALANCHE') {
+          const diffJuros = (Number(b.Taxa_Juros_Mes) || 0) - (Number(a.Taxa_Juros_Mes) || 0);
+          if (diffJuros !== 0) return diffJuros;
+          return pesoB - pesoA; // Desempata pela Prioridade (ótimo para dívidas PF 0%)
         } else {
-          return (Number(a.Saldo_Restante) || 0) - (Number(b.Saldo_Restante) || 0);
+          const diffSaldo = (Number(a.Saldo_Restante) || 0) - (Number(b.Saldo_Restante) || 0);
+          if (diffSaldo !== 0) return diffSaldo;
+          return pesoB - pesoA;
         }
       });
 
       container.innerHTML = ativas.map((d, idx) => `
         <div class="p-3 rounded-lg border ${idx === 0 ? 'bg-amber-50 border-amber-300' : 'bg-slate-50 border-slate-200'} flex justify-between items-center">
           <div>
-            <div class="flex items-center gap-1.5">
+            <div class="flex items-center gap-1.5 flex-wrap">
               <span class="px-1.5 py-0.5 rounded text-[10px] font-bold ${idx === 0 ? 'bg-amber-500 text-white' : 'bg-slate-200 text-slate-700'}">${idx + 1}º Alvo</span>
               <strong class="text-xs text-slate-800">${d.Credor}</strong>
+              ${gerarBadgePrioridade(d.Prioridade)}
             </div>
             <p class="text-[11px] text-slate-500 mt-0.5">${d.Descricao} • Juros: <strong>${Number(d.Taxa_Juros_Mes).toFixed(2)}% a.m.</strong></p>
           </div>
@@ -1230,7 +1266,7 @@
       `).join('');
     }
 
-    // ABA 4: DÍVIDAS E ACORDOS
+    // ABA 4: DÍVIDAS E ACORDOS (Com exibição dos 5 níveis de prioridade)
     function renderizarTabelaDividas() {
       const tbody = document.getElementById('tabelaDividasBody');
       if (!estado.dividas.length) {
@@ -1246,8 +1282,11 @@
         return `
           <tr class="hover:bg-slate-50">
             <td class="py-3 px-4">
-              <div class="font-bold text-slate-800">${d.Credor}</div>
-              <div class="text-xs text-slate-500">${d.Descricao} • <span class="font-semibold ${isPF ? 'text-emerald-700' : 'text-indigo-700'}">${d.Tipo_Credor}</span></div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-800">${d.Credor}</span>
+                ${gerarBadgePrioridade(d.Prioridade)}
+              </div>
+              <div class="text-xs text-slate-500 mt-0.5">${d.Descricao} • <span class="font-semibold ${isPF ? 'text-emerald-700' : 'text-indigo-700'}">${d.Tipo_Credor}</span></div>
             </td>
             <td class="py-3 px-4 text-xs">
               <div>${d.Modalidade}</div>
