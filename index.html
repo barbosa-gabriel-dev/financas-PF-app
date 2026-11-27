@@ -37,7 +37,7 @@
 
       <div class="flex items-center gap-2">
         <input type="month" id="filtroMes" class="bg-indigo-900 text-white text-sm rounded-lg px-3 py-2 border border-indigo-700 focus:outline-none focus:border-indigo-400">
-        
+
         <button id="btnInstalarPWA" onclick="instalarPWA()" title="Instalar Aplicativo no Dispositivo" class="hidden bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm transition">
           <i class="fa-solid fa-download"></i> <span class="hidden sm:inline">Instalar App</span>
         </button>
@@ -183,17 +183,17 @@
           </div>
         </div>
 
-        <!-- Ordem de Ataque Recomendada (Avalanche vs Bola de Neve) -->
+        <!-- Ordem de Ataque Recomendada (Avalanche / Bola de Neve / Prioridade) -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 space-y-3">
-          <div class="flex justify-between items-center border-b pb-2">
+          <div class="flex justify-between items-center border-b pb-2 gap-2">
             <div>
               <h3 class="font-bold text-slate-800 text-sm">Ordem de Ataque (Quitação)</h3>
               <p class="text-[11px] text-slate-400">Qual dívida quitar primeiro</p>
             </div>
             <select id="selectEstrategia" onchange="renderizarOrdemAtaque()" class="text-xs border rounded-lg px-2 py-1 bg-slate-50 font-semibold text-indigo-700">
-              <option value="AVALANCHE">Método Avalanche (Juros)</option>
+              <option value="AVALANCHE">Avalanche (Juros)</option>
               <option value="BOLA_DE_NEVE">Bola de Neve (Menor Saldo)</option>
-              <option value="PRIORIDADE">Por Prioridade (Altíssima ➔ Baixíssima)</option>
+              <option value="PRIORIDADE">Prioridade (5 Níveis)</option>
             </select>
           </div>
           <div id="listaOrdemAtaque" class="space-y-2.5 max-h-80 overflow-y-auto pr-1"></div>
@@ -206,7 +206,7 @@
       <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-3">
         <div>
           <h2 class="font-bold text-slate-800">Gerenciamento de Cartões (Até 4 Cartões Ativos)</h2>
-          <p class="text-xs text-slate-500">Configure limites, datas de fechamento/vencimento, oculte ou adicione novos cartões.</p>
+          <p class="text-xs text-slate-500">Configure limites, datas de fechamento/vencimento, oculte, reative ou adicione novos cartões.</p>
         </div>
         <button onclick="abrirModalNovoCartao()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
           <i class="fa-solid fa-plus mr-1"></i> Adicionar Novo Cartão
@@ -215,7 +215,7 @@
 
       <!-- Cards Detalhados dos Cartões (Ativos e Inativos) -->
       <div id="gridCartoesDetalhado" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4"></div>
-      
+
       <!-- Barra de Ações e Filtros de Compras do Cartão -->
       <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-3">
         <div class="flex flex-wrap items-center gap-2">
@@ -306,7 +306,7 @@
         <table class="w-full text-left border-collapse text-sm">
           <thead>
             <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 uppercase text-xs">
-              <th class="py-3 px-4">Credor / Tipo</th>
+              <th class="py-3 px-4">Credor / Prioridade</th>
               <th class="py-3 px-4">Modalidade & Juros</th>
               <th class="py-3 px-4">Original / Atualizado</th>
               <th class="py-3 px-4">Acordo / Desconto</th>
@@ -476,6 +476,69 @@
     </div>
   </div>
 
+  <!-- ================= MODAL 2B: PAGAMENTO DE FATURA DO CARTÃO ================= -->
+  <div id="modalPagarFatura" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-md w-full p-6 shadow-xl space-y-4">
+      <div class="flex justify-between items-center border-b pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="bg-emerald-100 text-emerald-700 p-2.5 rounded-lg">
+            <i class="fa-solid fa-file-invoice-dollar text-lg"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-lg leading-tight">Pagar Fatura do Cartão</h3>
+            <p id="fatModalSubtitulo" class="text-xs text-slate-500">Cartão • Mês</p>
+          </div>
+        </div>
+        <button onclick="fecharModal('modalPagarFatura')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+      </div>
+
+      <form id="formPagarFatura" onsubmit="confirmarPagamentoFaturaModal(event)" class="space-y-3 text-sm">
+        <input type="hidden" id="fatIdCartao">
+        <input type="hidden" id="fatMes">
+        <input type="hidden" id="fatNomeCartao">
+        <input type="hidden" id="fatValorTotal">
+
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex justify-between items-center">
+          <div>
+            <span class="block text-xs text-slate-500 uppercase font-semibold">Valor da Fatura</span>
+            <span id="fatCompetenciaLabel" class="text-xs text-indigo-600 font-medium">Competência</span>
+          </div>
+          <strong id="fatUiValorTotal" class="text-2xl font-bold text-slate-900">R$ 0,00</strong>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Data do Pagamento</label>
+            <input type="date" id="fatDataPagto" required class="w-full border rounded-lg px-3 py-2">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Forma de Pagamento</label>
+            <select id="fatFormaPagto" class="w-full border rounded-lg px-3 py-2">
+              <option value="PIX">PIX</option>
+              <option value="Débito em Conta">Débito em Conta</option>
+              <option value="Transferência">Transferência</option>
+              <option value="Dinheiro">Dinheiro</option>
+              <option value="Boleto">Boleto</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-3 space-y-1">
+          <label class="flex items-center gap-2 text-xs font-semibold text-indigo-950 cursor-pointer">
+            <input type="checkbox" id="fatRegistrarFluxo" class="rounded text-indigo-600">
+            <span>Registrar também como Saída Paga no Caixa do Mês</span>
+          </label>
+          <p class="text-[11px] text-indigo-700">Marque se quiser lançar uma linha de saída paga no controle de caixa do mês além de marcar a fatura como Paga.</p>
+        </div>
+
+        <div class="pt-3 border-t flex justify-end gap-2">
+          <button type="button" onclick="fecharModal('modalPagarFatura')" class="px-4 py-2 rounded-lg border text-slate-600 hover:bg-slate-50">Cancelar</button>
+          <button type="submit" id="btnSubmitPagarFatura" class="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium">Confirmar Pagamento</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- ================= MODAL 3: CADASTRAR / EDITAR DÍVIDA (PF OU INSTITUIÇÃO) ================= -->
   <div id="modalDivida" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
     <div class="bg-white rounded-xl max-w-xl w-full p-6 shadow-xl space-y-4 my-8">
@@ -550,9 +613,9 @@
               </select>
             </div>
             <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">Prioridade Manual</label>
+              <label class="block text-xs font-semibold text-slate-600 mb-1">Prioridade (5 Níveis)</label>
               <select id="divPrioridade" class="w-full border rounded-lg px-3 py-2">
-                <option value="Altíssima">🔥 Altíssima (Urgente)</option>
+                <option value="Altíssima">Altíssima</option>
                 <option value="Alta">Alta</option>
                 <option value="Média" selected>Média</option>
                 <option value="Baixa">Baixa</option>
@@ -777,6 +840,14 @@
     const STORAGE_KEY_URL = 'fin_pf_api_url';
     const STORAGE_KEY_TOKEN = 'fin_pf_api_token';
 
+    const PESO_PRIORIDADE = {
+      'Altíssima': 5,
+      'Alta': 4,
+      'Média': 3,
+      'Baixa': 2,
+      'Baixíssima': 1
+    };
+
     let estado = {
       config: [],
       fluxo_mes: [],
@@ -800,6 +871,7 @@
       document.getElementById('divDataInicio').value = dataHoje;
       document.getElementById('divMesInicioAcordo').value = mesAtual;
       document.getElementById('flxVencimento').value = dataHoje;
+      document.getElementById('fatDataPagto').value = dataHoje;
 
       document.getElementById('filtroMes').addEventListener('change', atualizarTudoUI);
 
@@ -864,6 +936,19 @@
 
     function formatarMoeda(v) {
       return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function gerarBadgePrioridade(prioridade) {
+      const p = prioridade || 'Média';
+      const estilos = {
+        'Altíssima': 'bg-red-600 text-white',
+        'Alta': 'bg-orange-100 text-orange-800 border border-orange-300',
+        'Média': 'bg-amber-100 text-amber-800',
+        'Baixa': 'bg-sky-100 text-sky-800',
+        'Baixíssima': 'bg-slate-100 text-slate-500'
+      };
+      const classe = estilos[p] || estilos['Média'];
+      return `<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${classe}">${p}</span>`;
     }
 
     async function carregarDados() {
@@ -938,7 +1023,6 @@
       }
     }
 
-    // ATUALIZAÇÃO CENTRAL DE TODAS AS ABAS
     function atualizarTudoUI() {
       const mesFiltro = document.getElementById('filtroMes').value;
 
@@ -1015,7 +1099,6 @@
       renderizarTabelaPagamentosDividas();
     }
 
-    // RENDERIZAR OS CARTÕES (NO DASH APENAS ATIVOS; NA ABA CARTÕES TODOS + OPÇÃO DE REATIVAR)
     function renderizarCardsCartoes(mesFiltro) {
       const todosCartoes = estado.cartoes_config || [];
       const ativos = todosCartoes.filter(c => String(c.Ativo).toLowerCase() === 'sim');
@@ -1077,7 +1160,7 @@
                 <span class="px-2 py-0.5 rounded font-semibold ${faturaPaga ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
                   ${faturaPaga ? 'Fatura Paga' : (faturaMes > 0 ? 'Fatura Aberta' : 'Sem Gastos')}
                 </span>
-                ${faturaMes > 0 && !faturaPaga ? `<button onclick="pagarFatura('${c.ID_Cartao}', '${mesFiltro}', this)" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded font-medium"><i class="fa-solid fa-check mr-1"></i>Pagar Fatura</button>` : ''}
+                ${faturaMes > 0 && !faturaPaga ? `<button onclick="abrirModalPagarFatura('${c.ID_Cartao}', '${mesFiltro}', ${faturaMes})" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded font-medium"><i class="fa-solid fa-check mr-1"></i>Pagar Fatura</button>` : ''}
               </div>
             </div>
           </div>
@@ -1093,7 +1176,6 @@
         : `<div class="col-span-4 bg-white p-6 rounded-xl border text-center text-xs text-slate-400">Nenhum cartão cadastrado. Clique em "Adicionar Novo Cartão" acima.</div>`;
     }
 
-    // TABELA FLUXO DO MÊS (NO DASH)
     function renderizarTabelaFluxoMes(lista) {
       const tbody = document.getElementById('tabelaFluxoMesBody');
       if (!lista.length) {
@@ -1121,29 +1203,6 @@
       }).join('');
     }
 
-    // Helper de Cores e Pesos para os 5 Níveis de Prioridade
-    const PESO_PRIORIDADE = {
-      'Altíssima': 5,
-      'Alta': 4,
-      'Média': 3,
-      'Baixa': 2,
-      'Baixíssima': 1
-    };
-
-    function gerarBadgePrioridade(prioridade) {
-      const p = prioridade || 'Média';
-      const estilos = {
-        'Altíssima': 'bg-red-600 text-white',
-        'Alta': 'bg-orange-100 text-orange-800 border border-orange-300',
-        'Média': 'bg-amber-100 text-amber-800',
-        'Baixa': 'bg-sky-100 text-sky-800',
-        'Baixíssima': 'bg-slate-100 text-slate-500'
-      };
-      const classe = estilos[p] || estilos['Média'];
-      return `<span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ${classe}">${p}</span>`;
-    }
-
-    // ORDEM DE ATAQUE (AVALANCHE, BOLA DE NEVE OU PRIORIDADE + DESEMPATE POR PRIORIDADE)
     function renderizarOrdemAtaque() {
       const estrategia = document.getElementById('selectEstrategia').value;
       const ativas = estado.dividas.filter(d => d.Status !== 'Quitada' && Number(d.Saldo_Restante) > 0);
@@ -1164,7 +1223,7 @@
         } else if (estrategia === 'AVALANCHE') {
           const diffJuros = (Number(b.Taxa_Juros_Mes) || 0) - (Number(a.Taxa_Juros_Mes) || 0);
           if (diffJuros !== 0) return diffJuros;
-          return pesoB - pesoA; // Desempata pela Prioridade (ótimo para dívidas PF 0%)
+          return pesoB - pesoA;
         } else {
           const diffSaldo = (Number(a.Saldo_Restante) || 0) - (Number(b.Saldo_Restante) || 0);
           if (diffSaldo !== 0) return diffSaldo;
@@ -1190,7 +1249,6 @@
       `).join('');
     }
 
-    // ABA 2: COMPRAS DO CARTÃO
     function popularSelectCartoes() {
       const selCompra = document.getElementById('cmpIdCartao');
       const selFiltro = document.getElementById('filtroCartaoId');
@@ -1243,7 +1301,6 @@
       }).join('');
     }
 
-    // ABA 3: CUSTOS FIXOS
     function renderizarTabelaCustosFixos() {
       const tbody = document.getElementById('tabelaCustosFixosBody');
       if (!estado.custos_fixos.length) {
@@ -1266,7 +1323,6 @@
       `).join('');
     }
 
-    // ABA 4: DÍVIDAS E ACORDOS (Com exibição dos 5 níveis de prioridade)
     function renderizarTabelaDividas() {
       const tbody = document.getElementById('tabelaDividasBody');
       if (!estado.dividas.length) {
@@ -1282,7 +1338,7 @@
         return `
           <tr class="hover:bg-slate-50">
             <td class="py-3 px-4">
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2 flex-wrap">
                 <span class="font-bold text-slate-800">${d.Credor}</span>
                 ${gerarBadgePrioridade(d.Prioridade)}
               </div>
@@ -1401,7 +1457,7 @@
       const ok = await enviarPost({ acao: 'excluir_cartao', id_cartao: idCartao }, btnEl, 'Excluindo...');
       if (ok) fecharModal('modalConfigCartao');
     }
-    
+
     async function salvarConfigCartao(e) {
       e.preventDefault();
       const btn = document.getElementById('btnSubmitCfgCartao');
@@ -1508,9 +1564,70 @@
       }
     }
 
-    async function pagarFatura(idCartao, mesFatura, btnEl) {
-      if (!confirm(`Confirmar o pagamento integral da fatura de ${mesFatura}?`)) return;
-      await enviarPost({ acao: 'pagar_fatura_cartao', id_cartao: idCartao, mes_fatura: mesFatura, status: 'Paga' }, btnEl, 'Pagando...');
+    // MODAL DE PAGAMENTO DE FATURA
+    function abrirModalPagarFatura(idCartao, mesFatura, valorFatura) {
+      const cartao = estado.cartoes_config.find(c => String(c.ID_Cartao) === String(idCartao));
+      const nomeCartao = cartao ? cartao.Nome_Cartao : idCartao;
+      const valorNum = Number(valorFatura) || 0;
+
+      document.getElementById('formPagarFatura').reset();
+      document.getElementById('fatIdCartao').value = idCartao;
+      document.getElementById('fatMes').value = mesFatura;
+      document.getElementById('fatNomeCartao').value = nomeCartao;
+      document.getElementById('fatValorTotal').value = valorNum;
+
+      document.getElementById('fatModalSubtitulo').innerText = `${nomeCartao} • Fatura ${mesFatura}`;
+      document.getElementById('fatCompetenciaLabel').innerText = `Fatura de ${mesFatura}`;
+      document.getElementById('fatUiValorTotal').innerText = formatarMoeda(valorNum);
+      document.getElementById('fatDataPagto').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('fatFormaPagto').value = 'PIX';
+      document.getElementById('fatRegistrarFluxo').checked = false;
+
+      const btn = document.getElementById('btnSubmitPagarFatura');
+      btn.disabled = false;
+      btn.innerText = 'Confirmar Pagamento';
+
+      document.getElementById('modalPagarFatura').classList.remove('hidden');
+    }
+
+    async function confirmarPagamentoFaturaModal(e) {
+      e.preventDefault();
+      if (emProcessamento) return;
+
+      const btn = document.getElementById('btnSubmitPagarFatura');
+      const idCartao = document.getElementById('fatIdCartao').value;
+      const mesFatura = document.getElementById('fatMes').value;
+      const nomeCartao = document.getElementById('fatNomeCartao').value;
+      const valorTotal = parseFloat(document.getElementById('fatValorTotal').value) || 0;
+      const dataPagto = document.getElementById('fatDataPagto').value;
+      const formaPagto = document.getElementById('fatFormaPagto').value;
+      const registrarFluxo = document.getElementById('fatRegistrarFluxo').checked;
+
+      const ok = await enviarPost({
+        acao: 'pagar_fatura_cartao',
+        id_cartao: idCartao,
+        mes_fatura: mesFatura,
+        status: 'Paga',
+        data_pagamento: dataPagto,
+        forma_pagto: formaPagto
+      }, btn, 'Pagando...');
+
+      if (ok) {
+        if (registrarFluxo && valorTotal > 0) {
+          await enviarPost({
+            acao: 'salvar_fluxo_mes',
+            dados: {
+              Tipo: 'Saída',
+              Valor: valorTotal,
+              Descricao: `Fatura ${nomeCartao} (${mesFatura}) - ${formaPagto}`,
+              Data_Vencimento: dataPagto,
+              Categoria: 'Cartão de Crédito',
+              Status: 'Pago'
+            }
+          });
+        }
+        fecharModal('modalPagarFatura');
+      }
     }
 
     async function excluirCompraCartao(idCompra, idGrupo, totalParcelas, btnEl) {
